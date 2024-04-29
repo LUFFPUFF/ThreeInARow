@@ -4,7 +4,7 @@ import random
 class Game:
     def __init__(self, master):
         self.master = master
-        self.master.title("Игра на сбор линеек")
+        self.master.title("Three in a row")
         self.canvas = tk.Canvas(self.master, width=400, height=400)
         self.canvas.pack()
         self.create_board()
@@ -26,14 +26,14 @@ class Game:
 
     def remove_lines(self, x, y):
         color = self.board[x][y]
-        self.board[x][y] = ''
-        self.canvas.delete("square")
-        self.draw_board()
-        self.master.update()
-        self.board[x][y] = color
-        self.remove_connected(x, y, color)
-        if self.check_lines():
-            self.score += 10
+        connected = self.find_connected(x, y, color, [])  # Находим связанные элементы
+        if len(connected) >= 3:  # Удаляем только если их достаточно
+            for i, j in connected:
+                self.board[i][j] = ''
+            self.canvas.delete("square")
+            self.draw_board()
+            self.master.update()
+            self.score += 10 * (len(connected) - 2)  # Очки зависят от длины линейки
             self.score_label.config(text="Очки: {}".format(self.score))
 
     def remove_connected(self, x, y, color):
@@ -48,6 +48,16 @@ class Game:
         self.remove_connected(x, y + 1, color)
         self.remove_connected(x, y - 1, color)
 
+    def find_connected(self, x, y, color, visited):
+        if x < 0 or x >= 8 or y < 0 or y >= 8 or self.board[x][y] != color or (x, y) in visited:
+            return visited
+        visited.append((x, y))
+        self.find_connected(x + 1, y, color, visited)
+        self.find_connected(x - 1, y, color, visited)
+        self.find_connected(x, y + 1, color, visited)
+        self.find_connected(x, y - 1, color, visited)
+        return visited
+
     def check_lines(self):
         for i in range(8):
             for j in range(6):
@@ -57,6 +67,7 @@ class Game:
             for i in range(6):
                 if self.board[i][j] == self.board[i+1][j] == self.board[i+2][j] != '':
                     return True
+
         return False
 
     def on_click(self, event):
